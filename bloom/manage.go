@@ -132,7 +132,7 @@ func contains(s []int, e int) bool {
 	return false
 }
 
-func checkAgainstFilter(path string, bloomParams BloomParams) {
+func checkAgainstFilter(path string, bloomParams BloomParams, missing bool) {
 	filter, err := bloom.LoadFilter(path, bloomParams.gzip)
 	if err != nil {
 		exitWithError(err.Error())
@@ -167,7 +167,7 @@ func checkAgainstFilter(path string, bloomParams BloomParams) {
 				}
 			}
 
-			if filter.Check([]byte(value)) {
+			if filter.Check([]byte(value)) != missing {
 				if bloomParams.printEachMatch {
 					fmt.Printf("%s%s\n", prefix, value)
 				} else {
@@ -398,8 +398,10 @@ func main() {
 		{
 			Name:    "check",
 			Aliases: []string{"c"},
-			Flags:   []cli.Flag{},
-			Usage:   "Checks values against an existing Bloom filter.",
+			Flags: []cli.Flag{
+				cli.BoolFlag{Name: "missing, m", Usage: "Print missing values"},
+			},
+			Usage: "Checks values against an existing Bloom filter.",
 			Action: func(c *cli.Context) error {
 				path := c.Args().First()
 				bloomParams := parseBloomParams(c)
@@ -410,7 +412,7 @@ func main() {
 				if err != nil {
 					return err
 				}
-				checkAgainstFilter(path, bloomParams)
+				checkAgainstFilter(path, bloomParams, c.Bool("missing"))
 				return nil
 			},
 		},
